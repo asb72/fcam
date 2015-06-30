@@ -7,13 +7,18 @@ import android.view.View;
 
 class twHandler extends Handler {
     private final FCamActivity activity;
+    private boolean closeTimerStarted;
 
     twHandler(FCamActivity fCamActivity) {
         this.activity = fCamActivity;
+        this.closeTimerStarted = false;
     }
 
     public void handleMessage(Message message) {
         switch (message.what) {
+            case 65270:
+                this.activity.finish();
+                break;
             case 65280:
                 this.activity.layout.setVisibility(View.INVISIBLE);
                 break;
@@ -24,7 +29,15 @@ class twHandler extends Handler {
                 if (Util.isDisplayReady(this.activity.streamDev, Util.SOURCE_CHANNEL_CVBS2)) {
                     this.activity.imageView.setImageDrawable(null);
                     sendEmptyMessageDelayed(65295, 2000);
+
+                    this.closeTimerStarted = false;
+                    removeMessages(65270);
                     return;
+                }
+                if (!this.closeTimerStarted) {
+                    removeMessages(65270);
+                    sendEmptyMessageDelayed(65270, 3000);
+                    this.closeTimerStarted = true;
                 }
                 this.activity.imageView.setImageResource(R.drawable.warning_novideosignal);
                 sendEmptyMessageDelayed(65295, 1000);
