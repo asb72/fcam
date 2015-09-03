@@ -17,7 +17,12 @@ class twHandler extends Handler {
     public void handleMessage(Message message) {
         switch (message.what) {
             case 65270:
-                this.activity.finish();
+                if (this.activity.layout.getVisibility() != View.VISIBLE) {
+                    this.activity.finish();
+                } else {
+                    removeMessages(65270);
+                    sendEmptyMessageDelayed(65270, 8500);
+                }
                 break;
             case 65280:
                 this.activity.layout.setVisibility(View.INVISIBLE);
@@ -36,7 +41,7 @@ class twHandler extends Handler {
                 }
                 if (!this.closeTimerStarted) {
                     removeMessages(65270);
-                    sendEmptyMessageDelayed(65270, 3000);
+                    sendEmptyMessageDelayed(65270, 5000);
                     this.closeTimerStarted = true;
                 }
                 this.activity.imageView.setImageResource(R.drawable.warning_novideosignal);

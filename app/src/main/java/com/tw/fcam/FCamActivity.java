@@ -3,6 +3,7 @@ package com.tw.fcam;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.source.Util;
@@ -12,6 +13,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 public class FCamActivity extends Activity {
@@ -21,10 +23,19 @@ public class FCamActivity extends Activity {
     public boolean streaming;
     public LinearLayout layout;
     public ImageView imageView;
+    private TextView cam_color_text;
+    private TextView system_color_text;
     private final Handler mHandler;
     private int width;
+    private int system_color;
+    private int cam_color;
     private boolean mirror;
     private SharedPreferences prefs;
+    private static final int[] colors;
+
+    static {
+        colors = new int[]{Color.WHITE, Color.RED, Color.GREEN, Color.BLUE};
+    }
 
     public FCamActivity() {
         this.twUtil = null;
@@ -88,6 +99,36 @@ public class FCamActivity extends Activity {
                 }
                 Toast.makeText(getApplicationContext(), "Mirroring is " + this.mirror, Toast.LENGTH_SHORT).show();
                 break;
+            case R.id.cam_color:
+                if (++cam_color > 3) {
+                    cam_color = 0;
+                }
+                this.twUtil.write(272, 0xFFFFFF & colors[cam_color]);
+
+                try {
+                    SharedPreferences.Editor ed = this.prefs.edit();
+                    ed.putInt("cam_color", this.cam_color);
+                    ed.apply();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                cam_color_text.setTextColor(colors[cam_color]);
+                break;
+            case R.id.system_color:
+                if (++system_color > 3) {
+                    system_color = 0;
+                }
+                this.twUtil.write(272, 0xFFFFFF & colors[system_color]);
+
+                try {
+                    SharedPreferences.Editor ed = this.prefs.edit();
+                    ed.putInt("system_color", this.system_color);
+                    ed.apply();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                system_color_text.setTextColor(colors[system_color]);
+                break;
         }
         this.mHandler.removeMessages(65280);
         this.mHandler.sendEmptyMessageDelayed(65280, 3000);
@@ -98,6 +139,8 @@ public class FCamActivity extends Activity {
         setContentView(R.layout.fcam);
         this.layout = (LinearLayout) findViewById(R.id.hb);
         this.imageView = (ImageView) findViewById(R.id.warning_image);
+        this.cam_color_text = (TextView) findViewById(R.id.cam_color);
+        this.system_color_text = (TextView) findViewById(R.id.system_color);
         Display defaultDisplay = getWindowManager().getDefaultDisplay();
         this.width = defaultDisplay.getRawWidth();
         this.height = defaultDisplay.getRawHeight();
@@ -109,6 +152,16 @@ public class FCamActivity extends Activity {
         try {
             this.prefs = getSharedPreferences("fcam_advanced", 0);
             this.mirror = prefs.getBoolean("mirror", false);
+            this.cam_color = prefs.getInt("cam_color", 0);
+            if ((cam_color > 3) || (cam_color < 0)) {
+                cam_color = 0;
+            }
+            cam_color_text.setTextColor(colors[cam_color]);
+            this.system_color = prefs.getInt("system_color", 0);
+            if ((system_color > 3) || (system_color < 0)) {
+                system_color = 0;
+            }
+            system_color_text.setTextColor(colors[system_color]);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -133,7 +186,7 @@ public class FCamActivity extends Activity {
         if (this.mirror)
             Util.setMirror(this.streamDev, 0);
 
-        this.twUtil.write(272, 65280);
+        this.twUtil.write(272, 0xFFFFFF & colors[system_color]);
         super.onPause();
     }
 
@@ -146,7 +199,7 @@ public class FCamActivity extends Activity {
         startPreview();
 
         Util.setMirror(this.streamDev, this.mirror ? 1 : 0);
-        this.twUtil.write(272, 255);
+        this.twUtil.write(272, 0xFFFFFF & colors[cam_color]);
     }
 
     public boolean onTouchEvent(MotionEvent motionEvent) {
