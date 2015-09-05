@@ -16,6 +16,9 @@
                 android:width="0dip" android:visibility="visible"
                 android:layout_gravity="center" />
 
+            <TextView android:textSize="18.0dip" android:textStyle="normal" android:textColor="#ffffffff" android:gravity="center" android:id="@+id/app_key" android:background="@drawable/b_c_fg" android:clickable="true" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/key_setup" android:onClick="onClick"
+                android:width="0dip" android:visibility="visible"
+                android:layout_gravity="center" />
         </LinearLayout>
         <ImageView android:id="@+id/back" android:background="@drawable/b_c_fg" android:clickable="true" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginLeft="1.0dip" android:src="@drawable/back" android:scaleType="center" android:onClick="onClick" />
     </LinearLayout>

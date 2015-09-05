@@ -3,4 +3,6 @@
     <string name="mirror">Mirror</string>
     <string name="cam_color">Cam\n color</string>
     <string name="system_color">Sys\n color</string>
+    <string name="key_setup">Key\n setup</string>
+    <string name="key_clear">Key\n clear</string>
 </resources>

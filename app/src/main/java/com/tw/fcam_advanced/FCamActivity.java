@@ -1,6 +1,7 @@
-package com.tw.fcam;
+package com.tw.fcam_advanced;
 
 import android.app.Activity;
+import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
@@ -16,6 +17,8 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.tw.fcam_advanced.Service.FcamService;
+
 public class FCamActivity extends Activity {
     private TWUtil twUtil;
     private int height;
@@ -23,15 +26,27 @@ public class FCamActivity extends Activity {
     public boolean streaming;
     public LinearLayout layout;
     public ImageView imageView;
-    private TextView cam_color_text;
-    private TextView system_color_text;
+    private TextView camColorView;
+    private TextView systemColorView;
+    private TextView appKeyView;
     private final Handler mHandler;
     private int width;
     private int system_color;
     private int cam_color;
+    private int keyArg1;
+    private int keyArg2;
     private boolean mirror;
     private SharedPreferences prefs;
     private static final int[] colors;
+
+    final int TASK_LEARN = 1;
+    public final static int STATUS_START_LEARNING = 100;
+    public final static int STATUS_LEARNED = 200;
+
+    public final static String KEY_ARG1 = "keyArg1";
+    public final static String KEY_ARG2 = "keyArg2";
+    public final static String PARAM_LEARN = "learn";
+    public final static String PARAM_INTENT = "pendingIntent";
 
     static {
         colors = new int[]{Color.WHITE, Color.RED, Color.GREEN, Color.BLUE};
@@ -43,6 +58,7 @@ public class FCamActivity extends Activity {
         this.height = 480;
         this.streamDev = -1;
         this.streaming = false;
+        keyArg1 = keyArg2 = -1;
         this.mHandler = new twHandler(this);
     }
 
@@ -75,10 +91,32 @@ public class FCamActivity extends Activity {
         }
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (resultCode == STATUS_LEARNED && requestCode == TASK_LEARN) {
+            int keyArg1 = data.getIntExtra(KEY_ARG1, -1);
+            int keyArg2 = data.getIntExtra(KEY_ARG2, -1);
+
+            try {
+                SharedPreferences.Editor ed = this.prefs.edit();
+                ed.putInt(KEY_ARG1, keyArg1);
+                ed.putInt(KEY_ARG2, keyArg2);
+                ed.commit();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            appKeyView.setText(getResources().getText(R.string.key_clear));
+            Toast.makeText(this, "Кнопка FCam обучена на код аппаратной кнопки: " + keyArg1 + "." + keyArg2, Toast.LENGTH_SHORT).show();
+        }
+    }
+
     public void onClick(View view) {
+        Intent intent;
         switch (view.getId()) {
             case R.id.home:
-                Intent intent = new Intent("android.intent.action.MAIN");
+                intent = new Intent("android.intent.action.MAIN");
                 intent.setFlags(Intent.FLAG_RECEIVER_FOREGROUND);
                 intent.addCategory("android.intent.category.HOME");
                 startActivity(intent);
@@ -112,7 +150,7 @@ public class FCamActivity extends Activity {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                cam_color_text.setTextColor(colors[cam_color]);
+                camColorView.setTextColor(colors[cam_color]);
                 break;
             case R.id.system_color:
                 if (++system_color > 3) {
@@ -127,7 +165,28 @@ public class FCamActivity extends Activity {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                system_color_text.setTextColor(colors[system_color]);
+                systemColorView.setTextColor(colors[system_color]);
+                break;
+            case R.id.app_key:
+                if (keyArg1 == -1 && keyArg2 == -1) {
+                    PendingIntent pi = createPendingResult(TASK_LEARN, new Intent(), 0);
+
+                    intent = new Intent(this, FcamService.class)
+                            .putExtra(PARAM_LEARN, true)
+                            .putExtra(PARAM_INTENT, pi);
+                    startService(intent);
+                } else {
+                    try {
+                        SharedPreferences.Editor ed = this.prefs.edit();
+                        ed.putInt(KEY_ARG1, keyArg1 = -1);
+                        ed.putInt(KEY_ARG2, keyArg2 = -1);
+                        ed.commit();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    stopService(new Intent(this, FcamService.class));
+                    appKeyView.setText(getResources().getText(R.string.key_setup));
+                }
                 break;
         }
         this.mHandler.removeMessages(65280);
@@ -139,8 +198,9 @@ public class FCamActivity extends Activity {
         setContentView(R.layout.fcam);
         this.layout = (LinearLayout) findViewById(R.id.hb);
         this.imageView = (ImageView) findViewById(R.id.warning_image);
-        this.cam_color_text = (TextView) findViewById(R.id.cam_color);
-        this.system_color_text = (TextView) findViewById(R.id.system_color);
+        this.camColorView = (TextView) findViewById(R.id.cam_color);
+        this.systemColorView = (TextView) findViewById(R.id.system_color);
+        this.appKeyView = (TextView) findViewById(R.id.app_key);
         Display defaultDisplay = getWindowManager().getDefaultDisplay();
         this.width = defaultDisplay.getRawWidth();
         this.height = defaultDisplay.getRawHeight();
@@ -156,12 +216,19 @@ public class FCamActivity extends Activity {
             if ((cam_color > 3) || (cam_color < 0)) {
                 cam_color = 0;
             }
-            cam_color_text.setTextColor(colors[cam_color]);
+            camColorView.setTextColor(colors[cam_color]);
+
             this.system_color = prefs.getInt("system_color", 0);
             if ((system_color > 3) || (system_color < 0)) {
                 system_color = 0;
             }
-            system_color_text.setTextColor(colors[system_color]);
+            systemColorView.setTextColor(colors[system_color]);
+
+            keyArg1 = prefs.getInt(KEY_ARG1, -1);
+            keyArg2 = prefs.getInt(KEY_ARG2, -1);
+            appKeyView.setText(getResources().getText(
+                    (keyArg1 == -1 && keyArg2 == -1) ? R.string.key_setup : R.string.key_clear
+            ));
         } catch (Exception e) {
             e.printStackTrace();
         }
