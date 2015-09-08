@@ -25,6 +25,11 @@ class twHandler extends Handler {
                 }
                 break;
             case 65280:
+                if (this.activity.keyLearning) {
+                    removeMessages(65280);
+                    sendEmptyMessageDelayed(65280, 3000);
+                }
+
                 this.activity.layout.setVisibility(View.INVISIBLE);
                 break;
             case 65295:

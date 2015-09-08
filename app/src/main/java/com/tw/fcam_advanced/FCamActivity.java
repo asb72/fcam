@@ -24,6 +24,7 @@ public class FCamActivity extends Activity {
     private int height;
     public int streamDev;
     public boolean streaming;
+    public boolean keyLearning;
     public LinearLayout layout;
     public ImageView imageView;
     private TextView camColorView;
@@ -57,7 +58,7 @@ public class FCamActivity extends Activity {
         this.width = 800;
         this.height = 480;
         this.streamDev = -1;
-        this.streaming = false;
+        this.streaming = this.keyLearning = false;
         keyArg1 = keyArg2 = -1;
         this.mHandler = new twHandler(this);
     }
@@ -109,6 +110,7 @@ public class FCamActivity extends Activity {
             }
             appKeyView.setText(getResources().getText(R.string.key_clear));
             Toast.makeText(this, "Кнопка FCam обучена на код аппаратной кнопки: " + keyArg1 + "." + keyArg2, Toast.LENGTH_SHORT).show();
+            keyLearning = false;
         }
     }
 
@@ -169,6 +171,7 @@ public class FCamActivity extends Activity {
                 break;
             case R.id.app_key:
                 if (keyArg1 == -1 && keyArg2 == -1) {
+                    keyLearning = true;
                     PendingIntent pi = createPendingResult(TASK_LEARN, new Intent(), 0);
 
                     intent = new Intent(this, FcamService.class)
@@ -253,7 +256,8 @@ public class FCamActivity extends Activity {
         if (this.mirror)
             Util.setMirror(this.streamDev, 0);
 
-        this.twUtil.write(272, 0xFFFFFF & colors[system_color]);
+        if (system_color != cam_color)
+            this.twUtil.write(272, 0xFFFFFF & colors[system_color]);
         super.onPause();
     }
 
@@ -266,7 +270,9 @@ public class FCamActivity extends Activity {
         startPreview();
 
         Util.setMirror(this.streamDev, this.mirror ? 1 : 0);
-        this.twUtil.write(272, 0xFFFFFF & colors[cam_color]);
+
+        if (system_color != cam_color)
+            this.twUtil.write(272, 0xFFFFFF & colors[cam_color]);
     }
 
     public boolean onTouchEvent(MotionEvent motionEvent) {

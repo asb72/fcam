@@ -46,13 +46,15 @@ public class FcamService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         PrefsLoad();
-        learning = intent.getBooleanExtra(FCamActivity.PARAM_LEARN, false);
-        if (learning) {
-            pi = intent.getParcelableExtra(FCamActivity.PARAM_INTENT);
-            try {
-                pi.send(FCamActivity.STATUS_START_LEARNING);
-            } catch (PendingIntent.CanceledException e) {
-                e.printStackTrace();
+        if (intent != null) {
+            learning = intent.getBooleanExtra(FCamActivity.PARAM_LEARN, false);
+            if (learning) {
+                pi = intent.getParcelableExtra(FCamActivity.PARAM_INTENT);
+                try {
+                    pi.send(FCamActivity.STATUS_START_LEARNING);
+                } catch (PendingIntent.CanceledException e) {
+                    e.printStackTrace();
+                }
             }
         }
         Toast.makeText(this, "Служба FCam запущена, learning = " + learning, Toast.LENGTH_SHORT).show();
