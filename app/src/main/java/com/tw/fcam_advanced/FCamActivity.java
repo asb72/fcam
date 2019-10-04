@@ -187,8 +187,8 @@ public class FCamActivity extends Activity {
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
-                    stopService(new Intent(this, FcamService.class));
                     appKeyView.setText(getResources().getText(R.string.key_setup));
+                    stopService(new Intent(this, FcamService.class));
                 }
                 break;
         }
